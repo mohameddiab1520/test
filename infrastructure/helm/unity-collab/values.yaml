@@ -1,0 +1,235 @@
+global:
+  environment: production
+  domain: collab.example.com
+  imageRegistry: docker.io
+  imagePullSecrets: []
+
+# Auth Service
+authService:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: collab/auth-service
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8083
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Session Service
+sessionService:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: collab/session-service
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Asset Service
+assetService:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: collab/asset-service
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8082
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Sync Service
+syncService:
+  enabled: true
+  replicaCount: 5
+  image:
+    repository: collab/sync-service
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8081
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  autoscaling:
+    enabled: true
+    minReplicas: 5
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Gateway
+gateway:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: collab/gateway
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 3000
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# PostgreSQL
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: 15-alpine
+  service:
+    type: ClusterIP
+    port: 5432
+  persistence:
+    enabled: true
+    size: 50Gi
+    storageClass: gp3
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "2000m"
+  config:
+    database: collab_prod
+    username: collab_user
+    # Password should be set via secrets
+
+# Redis
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: 7-alpine
+  service:
+    type: ClusterIP
+    port: 6379
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: gp3
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  config:
+    maxmemory: "2gb"
+    maxmemoryPolicy: "allkeys-lru"
+
+# Ingress
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "5000m"
+  tls:
+    enabled: true
+    secretName: collab-tls
+  hosts:
+    - host: api.collab.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: gateway
+    - host: sync.collab.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: sync-service
+
+# Secrets (use external secret management in production)
+secrets:
+  postgresql:
+    password: "CHANGE_ME_IN_PRODUCTION"
+  redis:
+    password: "CHANGE_ME_IN_PRODUCTION"
+  jwt:
+    secret: "CHANGE_ME_IN_PRODUCTION"
+    refreshSecret: "CHANGE_ME_IN_PRODUCTION"
+  s3:
+    accessKey: "CHANGE_ME_IN_PRODUCTION"
+    secretKey: "CHANGE_ME_IN_PRODUCTION"
+
+# Config
+config:
+  nodeEnv: production
+  logLevel: info
+  s3:
+    endpoint: "https://s3.amazonaws.com"
+    region: "us-east-1"
+    bucket: "unity-collab-assets"
+  cdn:
+    url: "https://cdn.collab.example.com"
+
+# Monitoring
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+  grafana:
+    enabled: true

@@ -1,0 +1,17 @@
+apiVersion: v2
+name: unity-collab
+description: Unity Collaboration Platform - Complete Helm Chart
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - unity
+  - collaboration
+  - real-time
+  - game-development
+home: https://github.com/yourorg/unity-collab-platform
+sources:
+  - https://github.com/yourorg/unity-collab-platform
+maintainers:
+  - name: Unity Collab Team
+    email: team@collab.example.com

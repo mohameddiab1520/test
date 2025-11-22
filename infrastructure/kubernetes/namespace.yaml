@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: unity-collab
+  labels:
+    name: unity-collab
+    environment: production

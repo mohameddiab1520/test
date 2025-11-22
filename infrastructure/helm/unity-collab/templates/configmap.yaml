@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "unity-collab.fullname" . }}-config
+  labels:
+    {{- include "unity-collab.labels" . | nindent 4 }}
+data:
+  # Database Configuration
+  POSTGRES_HOST: "{{ include "unity-collab.fullname" . }}-postgresql"
+  POSTGRES_PORT: "{{ .Values.postgresql.service.port }}"
+  POSTGRES_DB: "{{ .Values.postgresql.config.database }}"
+  REDIS_HOST: "{{ include "unity-collab.fullname" . }}-redis"
+  REDIS_PORT: "{{ .Values.redis.service.port }}"
+
+  # Service URLs
+  SESSION_SERVICE_URL: "http://{{ include "unity-collab.fullname" . }}-session:{{ .Values.sessionService.service.port }}"
+  ASSET_SERVICE_URL: "http://{{ include "unity-collab.fullname" . }}-asset:{{ .Values.assetService.service.port }}"
+  AUTH_SERVICE_URL: "http://{{ include "unity-collab.fullname" . }}-auth:{{ .Values.authService.service.port }}"
+  SYNC_SERVICE_URL: "http://{{ include "unity-collab.fullname" . }}-sync:{{ .Values.syncService.service.port }}"
+
+  # Environment
+  NODE_ENV: "{{ .Values.config.nodeEnv }}"
+  LOG_LEVEL: "{{ .Values.config.logLevel }}"
+
+  # S3 Configuration
+  S3_ENDPOINT: "{{ .Values.config.s3.endpoint }}"
+  S3_REGION: "{{ .Values.config.s3.region }}"
+  S3_BUCKET: "{{ .Values.config.s3.bucket }}"
+  CDN_URL: "{{ .Values.config.cdn.url }}"

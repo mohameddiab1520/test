@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: collab-config
+  namespace: unity-collab
+data:
+  # Database Configuration
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "collab_prod"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  MONGODB_HOST: "mongodb-service"
+  MONGODB_PORT: "27017"
+  RABBITMQ_HOST: "rabbitmq-service"
+  RABBITMQ_PORT: "5672"
+
+  # Service URLs
+  SESSION_SERVICE_URL: "http://session-service:8080"
+  ASSET_SERVICE_URL: "http://asset-service:8082"
+  AUTH_SERVICE_URL: "http://auth-service:8083"
+  SYNC_SERVICE_URL: "http://sync-service:8081"
+  GATEWAY_URL: "http://gateway-service:3000"
+
+  # Environment
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+
+  # S3/MinIO Configuration
+  S3_ENDPOINT: "https://s3.amazonaws.com"
+  S3_REGION: "us-east-1"
+  CDN_URL: "https://cdn.collab.example.com"
