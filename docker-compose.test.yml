@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Test Database
+  postgres-test:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: collab_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: testpass
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  # Test Redis
+  redis-test:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    tmpfs:
+      - /data
+
+  # Test MinIO
+  minio-test:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: testuser
+      MINIO_ROOT_PASSWORD: testpassword
+    ports:
+      - "9001:9000"
+      - "9002:9001"
+    tmpfs:
+      - /data
+
+  # Integration Test Runner
+  integration-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      - postgres-test
+      - redis-test
+      - minio-test
+    environment:
+      DB_HOST: postgres-test
+      DB_PORT: 5432
+      DB_USER: test
+      DB_PASSWORD: testpass
+      DB_NAME: collab_test
+      REDIS_HOST: redis-test
+      REDIS_PORT: 6379
+      S3_ENDPOINT: http://minio-test:9000
+    command: npm run test:integration

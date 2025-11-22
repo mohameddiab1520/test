@@ -1,0 +1,169 @@
+syntax = "proto3";
+
+package collab.build;
+
+import "common.proto";
+
+option go_package = "github.com/yourorg/collab/proto/build";
+
+// Build Service for CI/CD automation
+service BuildService {
+  rpc CreateBuild(CreateBuildRequest) returns (CreateBuildResponse);
+  rpc GetBuild(GetBuildRequest) returns (GetBuildResponse);
+  rpc ListBuilds(ListBuildsRequest) returns (ListBuildsResponse);
+  rpc CancelBuild(CancelBuildRequest) returns (CancelBuildResponse);
+  rpc GetBuildLogs(GetBuildLogsRequest) returns (stream BuildLog);
+  rpc GetBuildArtifacts(GetBuildArtifactsRequest) returns (GetBuildArtifactsResponse);
+  rpc TriggerBuild(TriggerBuildRequest) returns (TriggerBuildResponse);
+}
+
+message Build {
+  string id = 1;
+  string project_id = 2;
+  string commit_sha = 3;
+  string branch = 4;
+  BuildStatus status = 5;
+  BuildConfig config = 6;
+  BuildResult result = 7;
+  common.Timestamp started_at = 8;
+  common.Timestamp completed_at = 9;
+  int64 duration_seconds = 10;
+  string triggered_by = 11;
+  common.Metadata metadata = 12;
+}
+
+enum BuildStatus {
+  BUILD_STATUS_UNKNOWN = 0;
+  BUILD_STATUS_QUEUED = 1;
+  BUILD_STATUS_RUNNING = 2;
+  BUILD_STATUS_SUCCESS = 3;
+  BUILD_STATUS_FAILED = 4;
+  BUILD_STATUS_CANCELLED = 5;
+}
+
+message BuildConfig {
+  UnityVersion unity_version = 1;
+  repeated BuildTarget targets = 2;
+  map<string, string> environment = 3;
+  repeated string scripts = 4;
+  bool run_tests = 5;
+  bool compress_artifacts = 6;
+}
+
+message UnityVersion {
+  string version = 1;
+  string revision = 2;
+}
+
+enum BuildTarget {
+  BUILD_TARGET_UNKNOWN = 0;
+  BUILD_TARGET_STANDALONE_WINDOWS = 1;
+  BUILD_TARGET_STANDALONE_LINUX = 2;
+  BUILD_TARGET_STANDALONE_OSX = 3;
+  BUILD_TARGET_ANDROID = 4;
+  BUILD_TARGET_IOS = 5;
+  BUILD_TARGET_WEBGL = 6;
+}
+
+message BuildResult {
+  bool success = 1;
+  repeated string errors = 2;
+  repeated string warnings = 3;
+  TestResults test_results = 4;
+  repeated Artifact artifacts = 5;
+}
+
+message TestResults {
+  int32 total = 1;
+  int32 passed = 2;
+  int32 failed = 3;
+  int32 skipped = 4;
+  repeated TestCase test_cases = 5;
+}
+
+message TestCase {
+  string name = 1;
+  string status = 2;
+  float duration_seconds = 3;
+  string error_message = 4;
+}
+
+message Artifact {
+  string id = 1;
+  string name = 2;
+  string type = 3;
+  int64 size = 4;
+  string download_url = 5;
+  string checksum = 6;
+}
+
+message BuildLog {
+  string build_id = 1;
+  int64 line_number = 2;
+  string level = 3;
+  string message = 4;
+  common.Timestamp timestamp = 5;
+}
+
+message CreateBuildRequest {
+  string project_id = 1;
+  string commit_sha = 2;
+  string branch = 3;
+  BuildConfig config = 4;
+  string triggered_by = 5;
+}
+
+message CreateBuildResponse {
+  Build build = 1;
+}
+
+message GetBuildRequest {
+  string build_id = 1;
+}
+
+message GetBuildResponse {
+  Build build = 1;
+}
+
+message ListBuildsRequest {
+  string project_id = 1;
+  string branch = 2;
+  BuildStatus status = 3;
+  common.PaginationRequest pagination = 4;
+}
+
+message ListBuildsResponse {
+  repeated Build builds = 1;
+  common.PaginationResponse pagination = 2;
+}
+
+message CancelBuildRequest {
+  string build_id = 1;
+}
+
+message CancelBuildResponse {
+  bool success = 1;
+}
+
+message GetBuildLogsRequest {
+  string build_id = 1;
+  int64 from_line = 2;
+}
+
+message GetBuildArtifactsRequest {
+  string build_id = 1;
+}
+
+message GetBuildArtifactsResponse {
+  repeated Artifact artifacts = 1;
+}
+
+message TriggerBuildRequest {
+  string project_id = 1;
+  string branch = 2;
+  BuildConfig config = 3;
+}
+
+message TriggerBuildResponse {
+  Build build = 1;
+}

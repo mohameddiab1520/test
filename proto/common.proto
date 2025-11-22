@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package collab.common;
+
+option go_package = "github.com/yourorg/collab/proto/common";
+
+// Common message types used across services
+
+message Timestamp {
+  int64 seconds = 1;
+  int32 nanos = 2;
+}
+
+message UUID {
+  string value = 1;
+}
+
+message Metadata {
+  map<string, string> fields = 1;
+}
+
+message Error {
+  string code = 1;
+  string message = 2;
+  string details = 3;
+  repeated string stack_trace = 4;
+}
+
+message PaginationRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string sort_by = 3;
+  string order = 4; // "asc" or "desc"
+}
+
+message PaginationResponse {
+  int32 total_items = 1;
+  int32 total_pages = 2;
+  int32 current_page = 3;
+  int32 page_size = 4;
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  enum Status {
+    UNKNOWN = 0;
+    HEALTHY = 1;
+    UNHEALTHY = 2;
+    DEGRADED = 3;
+  }
+
+  Status status = 1;
+  string version = 2;
+  Timestamp timestamp = 3;
+  map<string, string> dependencies = 4;
+}
+
+message Empty {}

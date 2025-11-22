@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  # Gateway
+  gateway:
+    image: collab/gateway:latest
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    depends_on:
+      - auth
+      - session
+      - sync
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # Auth Service
+  auth:
+    image: collab/auth:latest
+    restart: always
+    environment:
+      ENVIRONMENT: production
+      PORT: 8083
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Session Service
+  session:
+    image: collab/session:latest
+    restart: always
+    environment:
+      ENVIRONMENT: production
+      PORT: 8080
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # Sync Service
+  sync:
+    image: collab/sync:latest
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 8081
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # Asset Service
+  asset:
+    image: collab/asset:latest
+    restart: always
+    environment:
+      ENVIRONMENT: production
+      PORT: 8082
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+
+  # Presence Service
+  presence:
+    image: collab/presence:latest
+    restart: always
+    environment:
+      ENVIRONMENT: production
+      PORT: 8084
+    deploy:
+      replicas: 2
+
+  # Voice Service
+  voice:
+    image: collab/voice:latest
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 8085
+    deploy:
+      replicas: 2
+
+  # Analytics Service
+  analytics:
+    image: collab/analytics:latest
+    restart: always
+    environment:
+      ENVIRONMENT: production
+      PORT: 8086
+    deploy:
+      replicas: 1
+
+networks:
+  default:
+    driver: bridge

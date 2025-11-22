@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package collab.sync;
+
+import "common.proto";
+
+option go_package = "github.com/yourorg/collab/proto/sync";
+
+// Sync Service for real-time collaboration
+service SyncService {
+  rpc Subscribe(SubscribeRequest) returns (stream SyncEvent);
+  rpc PublishOperation(PublishOperationRequest) returns (PublishOperationResponse);
+  rpc GetOperationHistory(GetOperationHistoryRequest) returns (GetOperationHistoryResponse);
+  rpc GetState(GetStateRequest) returns (GetStateResponse);
+  rpc ResolveConflict(ResolveConflictRequest) returns (ResolveConflictResponse);
+}
+
+message SyncEvent {
+  string event_id = 1;
+  string session_id = 2;
+  SyncEventType type = 3;
+  Operation operation = 4;
+  common.Timestamp timestamp = 5;
+  common.Metadata metadata = 6;
+}
+
+enum SyncEventType {
+  SYNC_EVENT_TYPE_UNKNOWN = 0;
+  SYNC_EVENT_TYPE_OPERATION = 1;
+  SYNC_EVENT_TYPE_CONFLICT = 2;
+  SYNC_EVENT_TYPE_STATE = 3;
+  SYNC_EVENT_TYPE_ACK = 4;
+}
+
+message Operation {
+  string id = 1;
+  string session_id = 2;
+  string user_id = 3;
+  OperationType type = 4;
+  string object_id = 5;
+  string path = 6;
+  bytes value = 7;
+  int64 version = 8;
+  common.Timestamp timestamp = 9;
+  common.Metadata metadata = 10;
+}
+
+enum OperationType {
+  OPERATION_TYPE_UNKNOWN = 0;
+  OPERATION_TYPE_CREATE = 1;
+  OPERATION_TYPE_UPDATE = 2;
+  OPERATION_TYPE_DELETE = 3;
+  OPERATION_TYPE_TRANSFORM = 4;
+}
+
+message SubscribeRequest {
+  string session_id = 1;
+  string user_id = 2;
+  int64 from_version = 3;
+}
+
+message PublishOperationRequest {
+  Operation operation = 1;
+}
+
+message PublishOperationResponse {
+  bool success = 1;
+  Operation transformed_operation = 2;
+  bool has_conflict = 3;
+  repeated Operation conflicts = 4;
+}
+
+message GetOperationHistoryRequest {
+  string session_id = 1;
+  int64 from_version = 2;
+  int64 to_version = 3;
+  int32 limit = 4;
+}
+
+message GetOperationHistoryResponse {
+  repeated Operation operations = 1;
+  int64 current_version = 2;
+}
+
+message GetStateRequest {
+  string session_id = 1;
+}
+
+message GetStateResponse {
+  int64 version = 1;
+  repeated string object_ids = 2;
+  int32 client_count = 3;
+  common.Timestamp last_updated = 4;
+}
+
+message ResolveConflictRequest {
+  string session_id = 1;
+  repeated Operation conflicting_operations = 2;
+  string resolution_strategy = 3;
+}
+
+message ResolveConflictResponse {
+  Operation resolved_operation = 1;
+  bool success = 2;
+}

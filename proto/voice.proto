@@ -1,0 +1,136 @@
+syntax = "proto3";
+
+package collab.voice;
+
+import "common.proto";
+
+option go_package = "github.com/yourorg/collab/proto/voice";
+
+// Voice Service
+service VoiceService {
+  rpc CreateChannel(CreateChannelRequest) returns (CreateChannelResponse);
+  rpc JoinChannel(JoinChannelRequest) returns (JoinChannelResponse);
+  rpc LeaveChannel(LeaveChannelRequest) returns (LeaveChannelResponse);
+  rpc MuteParticipant(MuteParticipantRequest) returns (MuteParticipantResponse);
+  rpc GetChannelInfo(GetChannelInfoRequest) returns (GetChannelInfoResponse);
+  rpc GetParticipants(GetParticipantsRequest) returns (GetParticipantsResponse);
+  rpc StreamAudio(stream AudioChunk) returns (stream AudioChunk);
+}
+
+message VoiceChannel {
+  string id = 1;
+  string session_id = 2;
+  string name = 3;
+  ChannelType type = 4;
+  int32 max_participants = 5;
+  AudioConfig audio_config = 6;
+  common.Timestamp created_at = 7;
+  common.Metadata metadata = 8;
+}
+
+enum ChannelType {
+  CHANNEL_TYPE_UNKNOWN = 0;
+  CHANNEL_TYPE_PUBLIC = 1;
+  CHANNEL_TYPE_PRIVATE = 2;
+  CHANNEL_TYPE_SPATIAL = 3;
+}
+
+message AudioConfig {
+  int32 sample_rate = 1;
+  int32 bitrate = 2;
+  int32 channels = 3;
+  string codec = 4;
+  bool noise_suppression = 5;
+  bool echo_cancellation = 6;
+  bool auto_gain_control = 7;
+}
+
+message VoiceParticipant {
+  string id = 1;
+  string user_id = 2;
+  string channel_id = 3;
+  bool is_muted = 4;
+  bool is_speaking = 5;
+  float volume_level = 6;
+  SpatialAudio spatial_audio = 7;
+  common.Timestamp joined_at = 8;
+}
+
+message SpatialAudio {
+  bool enabled = 1;
+  Position position = 2;
+  float attenuation_distance = 3;
+  float max_distance = 4;
+}
+
+message Position {
+  float x = 1;
+  float y = 2;
+  float z = 3;
+}
+
+message AudioChunk {
+  string participant_id = 1;
+  bytes data = 2;
+  int64 sequence = 3;
+  common.Timestamp timestamp = 4;
+}
+
+message CreateChannelRequest {
+  string session_id = 1;
+  string name = 2;
+  ChannelType type = 3;
+  int32 max_participants = 4;
+  AudioConfig audio_config = 5;
+}
+
+message CreateChannelResponse {
+  VoiceChannel channel = 1;
+}
+
+message JoinChannelRequest {
+  string channel_id = 1;
+  string user_id = 2;
+  SpatialAudio spatial_audio = 3;
+}
+
+message JoinChannelResponse {
+  VoiceParticipant participant = 1;
+  string webrtc_offer = 2;
+  repeated string ice_servers = 3;
+}
+
+message LeaveChannelRequest {
+  string channel_id = 1;
+  string user_id = 2;
+}
+
+message LeaveChannelResponse {
+  bool success = 1;
+}
+
+message MuteParticipantRequest {
+  string participant_id = 1;
+  bool muted = 2;
+}
+
+message MuteParticipantResponse {
+  VoiceParticipant participant = 1;
+}
+
+message GetChannelInfoRequest {
+  string channel_id = 1;
+}
+
+message GetChannelInfoResponse {
+  VoiceChannel channel = 1;
+  int32 participant_count = 2;
+}
+
+message GetParticipantsRequest {
+  string channel_id = 1;
+}
+
+message GetParticipantsResponse {
+  repeated VoiceParticipant participants = 1;
+}

@@ -1,0 +1,158 @@
+syntax = "proto3";
+
+package collab.session;
+
+import "common.proto";
+
+option go_package = "github.com/yourorg/collab/proto/session";
+
+// Session Service
+service SessionService {
+  rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+  rpc UpdateSession(UpdateSessionRequest) returns (UpdateSessionResponse);
+  rpc DeleteSession(DeleteSessionRequest) returns (DeleteSessionResponse);
+  rpc JoinSession(JoinSessionRequest) returns (JoinSessionResponse);
+  rpc LeaveSession(LeaveSessionRequest) returns (LeaveSessionResponse);
+  rpc GetParticipants(GetParticipantsRequest) returns (GetParticipantsResponse);
+  rpc UpdateParticipant(UpdateParticipantRequest) returns (UpdateParticipantResponse);
+}
+
+message Session {
+  string id = 1;
+  string name = 2;
+  string project_id = 3;
+  string scene_name = 4;
+  string owner_id = 5;
+  SessionStatus status = 6;
+  int32 max_participants = 7;
+  common.Timestamp created_at = 8;
+  common.Timestamp updated_at = 9;
+  common.Metadata metadata = 10;
+}
+
+enum SessionStatus {
+  SESSION_STATUS_UNKNOWN = 0;
+  SESSION_STATUS_ACTIVE = 1;
+  SESSION_STATUS_PAUSED = 2;
+  SESSION_STATUS_ENDED = 3;
+}
+
+message Participant {
+  string id = 1;
+  string user_id = 2;
+  string session_id = 3;
+  string name = 4;
+  string avatar_url = 5;
+  ParticipantRole role = 6;
+  ParticipantStatus status = 7;
+  common.Timestamp joined_at = 8;
+  common.Timestamp last_activity = 9;
+  common.Metadata metadata = 10;
+}
+
+enum ParticipantRole {
+  PARTICIPANT_ROLE_UNKNOWN = 0;
+  PARTICIPANT_ROLE_OWNER = 1;
+  PARTICIPANT_ROLE_MODERATOR = 2;
+  PARTICIPANT_ROLE_MEMBER = 3;
+  PARTICIPANT_ROLE_VIEWER = 4;
+}
+
+enum ParticipantStatus {
+  PARTICIPANT_STATUS_UNKNOWN = 0;
+  PARTICIPANT_STATUS_ONLINE = 1;
+  PARTICIPANT_STATUS_AWAY = 2;
+  PARTICIPANT_STATUS_BUSY = 3;
+  PARTICIPANT_STATUS_OFFLINE = 4;
+}
+
+message CreateSessionRequest {
+  string name = 1;
+  string project_id = 2;
+  string scene_name = 3;
+  int32 max_participants = 4;
+  common.Metadata metadata = 5;
+}
+
+message CreateSessionResponse {
+  Session session = 1;
+}
+
+message GetSessionRequest {
+  string session_id = 1;
+}
+
+message GetSessionResponse {
+  Session session = 1;
+}
+
+message ListSessionsRequest {
+  string project_id = 1;
+  SessionStatus status = 2;
+  common.PaginationRequest pagination = 3;
+}
+
+message ListSessionsResponse {
+  repeated Session sessions = 1;
+  common.PaginationResponse pagination = 2;
+}
+
+message UpdateSessionRequest {
+  string session_id = 1;
+  string name = 2;
+  SessionStatus status = 3;
+  int32 max_participants = 4;
+  common.Metadata metadata = 5;
+}
+
+message UpdateSessionResponse {
+  Session session = 1;
+}
+
+message DeleteSessionRequest {
+  string session_id = 1;
+}
+
+message DeleteSessionResponse {
+  bool success = 1;
+}
+
+message JoinSessionRequest {
+  string session_id = 1;
+  string user_id = 2;
+}
+
+message JoinSessionResponse {
+  Participant participant = 1;
+  Session session = 2;
+}
+
+message LeaveSessionRequest {
+  string session_id = 1;
+  string user_id = 2;
+}
+
+message LeaveSessionResponse {
+  bool success = 1;
+}
+
+message GetParticipantsRequest {
+  string session_id = 1;
+}
+
+message GetParticipantsResponse {
+  repeated Participant participants = 1;
+}
+
+message UpdateParticipantRequest {
+  string participant_id = 1;
+  ParticipantRole role = 2;
+  ParticipantStatus status = 3;
+  common.Metadata metadata = 4;
+}
+
+message UpdateParticipantResponse {
+  Participant participant = 1;
+}

@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+package collab.presence;
+
+import "common.proto";
+
+option go_package = "github.com/yourorg/collab/proto/presence";
+
+// Presence Service
+service PresenceService {
+  rpc UpdatePresence(UpdatePresenceRequest) returns (UpdatePresenceResponse);
+  rpc GetPresence(GetPresenceRequest) returns (GetPresenceResponse);
+  rpc ListPresence(ListPresenceRequest) returns (ListPresenceResponse);
+  rpc Subscribe(SubscribeRequest) returns (stream PresenceEvent);
+  rpc TrackActivity(TrackActivityRequest) returns (TrackActivityResponse);
+  rpc GetActivities(GetActivitiesRequest) returns (GetActivitiesResponse);
+}
+
+message Presence {
+  string id = 1;
+  string user_id = 2;
+  string session_id = 3;
+  PresenceStatus status = 4;
+  string custom_status = 5;
+  Location location = 6;
+  ViewState view_state = 7;
+  common.Timestamp last_seen = 8;
+  common.Metadata metadata = 9;
+}
+
+enum PresenceStatus {
+  PRESENCE_STATUS_UNKNOWN = 0;
+  PRESENCE_STATUS_ONLINE = 1;
+  PRESENCE_STATUS_AWAY = 2;
+  PRESENCE_STATUS_BUSY = 3;
+  PRESENCE_STATUS_OFFLINE = 4;
+}
+
+message Location {
+  string scene = 1;
+  Position position = 2;
+  Rotation rotation = 3;
+  string focused_object = 4;
+}
+
+message Position {
+  float x = 1;
+  float y = 2;
+  float z = 3;
+}
+
+message Rotation {
+  float x = 1;
+  float y = 2;
+  float z = 3;
+  float w = 4;
+}
+
+message ViewState {
+  string camera_mode = 1;
+  float zoom_level = 2;
+  repeated string selected_objects = 3;
+}
+
+message Activity {
+  string id = 1;
+  string user_id = 2;
+  string session_id = 3;
+  ActivityType type = 4;
+  string description = 5;
+  string object_id = 6;
+  common.Timestamp timestamp = 7;
+  common.Metadata metadata = 8;
+}
+
+enum ActivityType {
+  ACTIVITY_TYPE_UNKNOWN = 0;
+  ACTIVITY_TYPE_EDIT = 1;
+  ACTIVITY_TYPE_CREATE = 2;
+  ACTIVITY_TYPE_DELETE = 3;
+  ACTIVITY_TYPE_MOVE = 4;
+  ACTIVITY_TYPE_SELECT = 5;
+  ACTIVITY_TYPE_VIEW = 6;
+  ACTIVITY_TYPE_COMMENT = 7;
+}
+
+message PresenceEvent {
+  string event_id = 1;
+  PresenceEventType type = 2;
+  Presence presence = 3;
+  Activity activity = 4;
+  common.Timestamp timestamp = 5;
+}
+
+enum PresenceEventType {
+  PRESENCE_EVENT_TYPE_UNKNOWN = 0;
+  PRESENCE_EVENT_TYPE_JOIN = 1;
+  PRESENCE_EVENT_TYPE_LEAVE = 2;
+  PRESENCE_EVENT_TYPE_UPDATE = 3;
+  PRESENCE_EVENT_TYPE_ACTIVITY = 4;
+}
+
+message UpdatePresenceRequest {
+  string user_id = 1;
+  string session_id = 2;
+  PresenceStatus status = 3;
+  string custom_status = 4;
+  Location location = 5;
+  ViewState view_state = 6;
+}
+
+message UpdatePresenceResponse {
+  Presence presence = 1;
+}
+
+message GetPresenceRequest {
+  string user_id = 1;
+  string session_id = 2;
+}
+
+message GetPresenceResponse {
+  Presence presence = 1;
+}
+
+message ListPresenceRequest {
+  string session_id = 1;
+}
+
+message ListPresenceResponse {
+  repeated Presence presences = 1;
+}
+
+message SubscribeRequest {
+  string session_id = 1;
+  string user_id = 2;
+}
+
+message TrackActivityRequest {
+  Activity activity = 1;
+}
+
+message TrackActivityResponse {
+  bool success = 1;
+  string activity_id = 2;
+}
+
+message GetActivitiesRequest {
+  string session_id = 1;
+  string user_id = 2;
+  int64 since = 3;
+  int32 limit = 4;
+}
+
+message GetActivitiesResponse {
+  repeated Activity activities = 1;
+}

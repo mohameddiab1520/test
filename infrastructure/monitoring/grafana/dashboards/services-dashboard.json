@@ -1,0 +1,102 @@
+{
+  "dashboard": {
+    "title": "Unity Collab - Services Overview",
+    "tags": ["unity", "services"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total[5m])) by (service)",
+            "legendFormat": "{{service}}"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) by (service)",
+            "legendFormat": "{{service}}"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Response Time (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (service, le))",
+            "legendFormat": "{{service}}"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Active Connections",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(websocket_connections_active) by (service)",
+            "legendFormat": "{{service}}"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Database Connections",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(db_connections_active) by (service)",
+            "legendFormat": "{{service}}"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "CPU Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"\"}[5m])) by (container)",
+            "legendFormat": "{{container}}"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Memory Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(container_memory_usage_bytes{container!=\"\"}) by (container)",
+            "legendFormat": "{{container}}"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Operation Rate (Sync Service)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(sync_operations_total[5m])) by (type)",
+            "legendFormat": "{{type}}"
+          }
+        ]
+      }
+    ],
+    "refresh": "10s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    }
+  }
+}

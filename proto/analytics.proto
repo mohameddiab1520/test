@@ -1,0 +1,158 @@
+syntax = "proto3";
+
+package collab.analytics;
+
+import "common.proto";
+
+option go_package = "github.com/yourorg/collab/proto/analytics";
+
+// Analytics Service
+service AnalyticsService {
+  rpc TrackEvent(TrackEventRequest) returns (TrackEventResponse);
+  rpc BatchTrackEvents(BatchTrackEventsRequest) returns (BatchTrackEventsResponse);
+  rpc GetMetrics(GetMetricsRequest) returns (GetMetricsResponse);
+  rpc GetUserActivity(GetUserActivityRequest) returns (GetUserActivityResponse);
+  rpc GetSessionAnalytics(GetSessionAnalyticsRequest) returns (GetSessionAnalyticsResponse);
+  rpc GetProjectStats(GetProjectStatsRequest) returns (GetProjectStatsResponse);
+  rpc GenerateReport(GenerateReportRequest) returns (GenerateReportResponse);
+}
+
+message Event {
+  string id = 1;
+  string event_type = 2;
+  string user_id = 3;
+  string session_id = 4;
+  string project_id = 5;
+  map<string, string> properties = 6;
+  common.Timestamp timestamp = 7;
+  string ip_address = 8;
+  string user_agent = 9;
+}
+
+message Metric {
+  string name = 1;
+  MetricType type = 2;
+  double value = 3;
+  map<string, string> tags = 4;
+  common.Timestamp timestamp = 5;
+}
+
+enum MetricType {
+  METRIC_TYPE_UNKNOWN = 0;
+  METRIC_TYPE_COUNTER = 1;
+  METRIC_TYPE_GAUGE = 2;
+  METRIC_TYPE_HISTOGRAM = 3;
+  METRIC_TYPE_SUMMARY = 4;
+}
+
+message UserActivity {
+  string user_id = 1;
+  int32 total_sessions = 2;
+  int64 total_duration_seconds = 3;
+  int32 total_events = 4;
+  common.Timestamp first_seen = 5;
+  common.Timestamp last_seen = 6;
+  repeated string most_used_features = 7;
+  map<string, int32> event_counts = 8;
+}
+
+message SessionAnalytics {
+  string session_id = 1;
+  int64 duration_seconds = 2;
+  int32 participant_count = 3;
+  int32 total_operations = 4;
+  int32 conflicts_count = 5;
+  map<string, int32> event_breakdown = 6;
+  common.Timestamp started_at = 7;
+  common.Timestamp ended_at = 8;
+}
+
+message ProjectStats {
+  string project_id = 1;
+  int32 total_sessions = 2;
+  int32 total_users = 3;
+  int32 total_assets = 4;
+  int64 total_storage_bytes = 5;
+  int32 active_sessions = 6;
+  map<string, int32> activity_by_type = 7;
+  common.Timestamp period_start = 8;
+  common.Timestamp period_end = 9;
+}
+
+message TrackEventRequest {
+  Event event = 1;
+}
+
+message TrackEventResponse {
+  bool success = 1;
+  string event_id = 2;
+}
+
+message BatchTrackEventsRequest {
+  repeated Event events = 1;
+}
+
+message BatchTrackEventsResponse {
+  int32 events_tracked = 1;
+  repeated string event_ids = 2;
+}
+
+message GetMetricsRequest {
+  repeated string metric_names = 1;
+  map<string, string> filters = 2;
+  common.Timestamp start_time = 3;
+  common.Timestamp end_time = 4;
+  string aggregation = 5;
+}
+
+message GetMetricsResponse {
+  repeated Metric metrics = 1;
+}
+
+message GetUserActivityRequest {
+  string user_id = 1;
+  common.Timestamp start_time = 2;
+  common.Timestamp end_time = 3;
+}
+
+message GetUserActivityResponse {
+  UserActivity activity = 1;
+}
+
+message GetSessionAnalyticsRequest {
+  string session_id = 1;
+}
+
+message GetSessionAnalyticsResponse {
+  SessionAnalytics analytics = 1;
+}
+
+message GetProjectStatsRequest {
+  string project_id = 1;
+  common.Timestamp start_time = 2;
+  common.Timestamp end_time = 3;
+}
+
+message GetProjectStatsResponse {
+  ProjectStats stats = 1;
+}
+
+message GenerateReportRequest {
+  ReportType report_type = 1;
+  map<string, string> parameters = 2;
+  string format = 3;
+}
+
+enum ReportType {
+  REPORT_TYPE_UNKNOWN = 0;
+  REPORT_TYPE_USER_ACTIVITY = 1;
+  REPORT_TYPE_SESSION_SUMMARY = 2;
+  REPORT_TYPE_PROJECT_OVERVIEW = 3;
+  REPORT_TYPE_PERFORMANCE = 4;
+}
+
+message GenerateReportResponse {
+  string report_id = 1;
+  string download_url = 2;
+  common.Timestamp generated_at = 3;
+}
