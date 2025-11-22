@@ -1,0 +1,185 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: collab_postgres
+    environment:
+      POSTGRES_DB: collab_dev
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d collab_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - collab_network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: collab_redis
+    command: redis-server --appendonly yes --requirepass devpass
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - collab_network
+
+  # MongoDB for Analytics and Logs
+  mongodb:
+    image: mongo:7
+    container_name: collab_mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: dev
+      MONGO_INITDB_ROOT_PASSWORD: devpass
+      MONGO_INITDB_DATABASE: collab_dev
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - collab_network
+
+  # RabbitMQ Message Queue
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: collab_rabbitmq
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: dev
+      RABBITMQ_DEFAULT_PASS: devpass
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - collab_network
+
+  # MinIO for S3-compatible object storage
+  minio:
+    image: minio/minio:latest
+    container_name: collab_minio
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - collab_network
+
+  # TimescaleDB for Time-Series Metrics
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: collab_timescaledb
+    environment:
+      POSTGRES_DB: collab_metrics
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpass
+    ports:
+      - "5433:5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d collab_metrics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - collab_network
+
+  # Prometheus for Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: collab_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - collab_network
+
+  # Grafana for Monitoring Dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: collab_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/grafana:/etc/grafana/provisioning
+    networks:
+      - collab_network
+
+  # Jaeger for Distributed Tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: collab_jaeger
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686" # UI
+      - "14268:14268"
+      - "14250:14250"
+      - "9411:9411"
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: :9411
+    networks:
+      - collab_network
+
+volumes:
+  postgres_data:
+  redis_data:
+  mongo_data:
+  rabbitmq_data:
+  minio_data:
+  timescale_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  collab_network:
+    driver: bridge
