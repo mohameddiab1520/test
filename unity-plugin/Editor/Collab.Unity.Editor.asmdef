@@ -1,0 +1,18 @@
+{
+    "name": "Collab.Unity.Editor",
+    "rootNamespace": "Collab.Unity.Editor",
+    "references": [
+        "Collab.Unity"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

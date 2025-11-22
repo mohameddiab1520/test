@@ -1,0 +1,31 @@
+{
+  "name": "com.collab.unity-collaboration",
+  "version": "1.0.0",
+  "displayName": "Unity Collaboration Platform",
+  "description": "Real-time collaboration plugin for Unity - Similar to Coplay Premium",
+  "unity": "2022.3",
+  "unityRelease": "0f1",
+  "documentationUrl": "https://github.com/yourorg/unity-collab-platform",
+  "changelogUrl": "https://github.com/yourorg/unity-collab-platform/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/yourorg/unity-collab-platform/blob/main/LICENSE",
+  "keywords": [
+    "collaboration",
+    "multiplayer",
+    "real-time",
+    "sync",
+    "teamwork"
+  ],
+  "author": {
+    "name": "Your Organization",
+    "email": "support@collab.example.com",
+    "url": "https://collab.example.com"
+  },
+  "dependencies": {},
+  "samples": [
+    {
+      "displayName": "Basic Collaboration Scene",
+      "description": "A simple example of using the collaboration plugin",
+      "path": "Samples~/BasicCollaboration"
+    }
+  ]
+}
