@@ -1,4 +1,4 @@
-module github.com/unity-collab/presence-service
+module github.com/yourorg/collab/services/presence
 
 go 1.21
 

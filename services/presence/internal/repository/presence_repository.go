@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
-	"github.com/unity-collab/presence-service/internal/models"
+	"github.com/yourorg/collab/services/presence/internal/models"
 )
 
 type PresenceRepository struct {

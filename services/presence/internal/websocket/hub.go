@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/unity-collab/presence-service/internal/models"
-	"github.com/unity-collab/presence-service/internal/service"
+	"github.com/yourorg/collab/services/presence/internal/models"
+	"github.com/yourorg/collab/services/presence/internal/service"
 	"go.uber.org/zap"
 )
 

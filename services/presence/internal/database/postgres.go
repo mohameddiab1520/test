@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	_ "github.com/lib/pq"
-	"github.com/unity-collab/presence-service/internal/config"
+	"github.com/yourorg/collab/services/presence/internal/config"
 )
 
 func NewPostgres(cfg *config.Config) (*sql.DB, error) {

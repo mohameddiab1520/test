@@ -1,0 +1,175 @@
+syntax = "proto3";
+
+package collab.conflict;
+
+import "common.proto";
+
+option go_package = "github.com/yourorg/collab/proto/conflict";
+
+// Conflict Resolution Service
+service ConflictService {
+  rpc DetectConflict(DetectConflictRequest) returns (DetectConflictResponse);
+  rpc ResolveConflict(ResolveConflictRequest) returns (ResolveConflictResponse);
+  rpc GetConflict(GetConflictRequest) returns (GetConflictResponse);
+  rpc ListConflicts(ListConflictsRequest) returns (ListConflictsResponse);
+  rpc AutoResolve(AutoResolveRequest) returns (AutoResolveResponse);
+  rpc GetConflictHistory(GetConflictHistoryRequest) returns (GetConflictHistoryResponse);
+  rpc SubscribeToConflicts(SubscribeToConflictsRequest) returns (stream ConflictEvent);
+}
+
+message Conflict {
+  string id = 1;
+  string project_id = 2;
+  string resource_id = 3;
+  ResourceType resource_type = 4;
+  ConflictType type = 5;
+  ConflictStatus status = 6;
+  repeated ConflictVersion versions = 7;
+  string resolved_by = 8;
+  ResolutionStrategy resolution_strategy = 9;
+  common.Timestamp detected_at = 10;
+  common.Timestamp resolved_at = 11;
+  common.Metadata metadata = 12;
+}
+
+enum ResourceType {
+  RESOURCE_TYPE_UNKNOWN = 0;
+  RESOURCE_TYPE_SCENE = 1;
+  RESOURCE_TYPE_PREFAB = 2;
+  RESOURCE_TYPE_SCRIPT = 3;
+  RESOURCE_TYPE_ASSET = 4;
+  RESOURCE_TYPE_SETTINGS = 5;
+  RESOURCE_TYPE_MATERIAL = 6;
+  RESOURCE_TYPE_TEXTURE = 7;
+}
+
+enum ConflictType {
+  CONFLICT_TYPE_UNKNOWN = 0;
+  CONFLICT_TYPE_EDIT_EDIT = 1;      // Two users edited the same resource
+  CONFLICT_TYPE_DELETE_EDIT = 2;    // One user deleted, another edited
+  CONFLICT_TYPE_MOVE_EDIT = 3;      // One user moved, another edited
+  CONFLICT_TYPE_MERGE = 4;          // Merge conflict
+  CONFLICT_TYPE_VERSION = 5;        // Version mismatch
+}
+
+enum ConflictStatus {
+  CONFLICT_STATUS_UNKNOWN = 0;
+  CONFLICT_STATUS_DETECTED = 1;
+  CONFLICT_STATUS_PENDING = 2;
+  CONFLICT_STATUS_RESOLVING = 3;
+  CONFLICT_STATUS_RESOLVED = 4;
+  CONFLICT_STATUS_FAILED = 5;
+}
+
+enum ResolutionStrategy {
+  RESOLUTION_STRATEGY_UNKNOWN = 0;
+  RESOLUTION_STRATEGY_MANUAL = 1;           // User manually resolves
+  RESOLUTION_STRATEGY_ACCEPT_THEIRS = 2;    // Accept remote changes
+  RESOLUTION_STRATEGY_ACCEPT_MINE = 3;      // Accept local changes
+  RESOLUTION_STRATEGY_AUTO_MERGE = 4;       // Automatic 3-way merge
+  RESOLUTION_STRATEGY_LAST_WRITE_WINS = 5;  // Most recent change wins
+  RESOLUTION_STRATEGY_FIRST_WRITE_WINS = 6; // First change wins
+}
+
+message ConflictVersion {
+  string version_id = 1;
+  string user_id = 2;
+  string user_name = 3;
+  bytes content = 4;
+  string hash = 5;
+  common.Timestamp timestamp = 6;
+  map<string, string> changes = 7;
+}
+
+message ConflictEvent {
+  string conflict_id = 1;
+  ConflictEventType event_type = 2;
+  Conflict conflict = 3;
+  common.Timestamp timestamp = 4;
+}
+
+enum ConflictEventType {
+  CONFLICT_EVENT_TYPE_UNKNOWN = 0;
+  CONFLICT_EVENT_TYPE_DETECTED = 1;
+  CONFLICT_EVENT_TYPE_UPDATED = 2;
+  CONFLICT_EVENT_TYPE_RESOLVED = 3;
+  CONFLICT_EVENT_TYPE_FAILED = 4;
+}
+
+message DetectConflictRequest {
+  string project_id = 1;
+  string resource_id = 2;
+  ResourceType resource_type = 3;
+  string user_id = 4;
+  bytes content = 5;
+  string content_hash = 6;
+  int64 base_version = 7;
+}
+
+message DetectConflictResponse {
+  bool has_conflict = 1;
+  Conflict conflict = 2;
+  repeated string conflicting_users = 3;
+}
+
+message ResolveConflictRequest {
+  string conflict_id = 1;
+  string user_id = 2;
+  ResolutionStrategy strategy = 3;
+  bytes resolved_content = 4;
+  string resolution_note = 5;
+}
+
+message ResolveConflictResponse {
+  bool success = 1;
+  Conflict conflict = 2;
+  string message = 3;
+}
+
+message GetConflictRequest {
+  string conflict_id = 1;
+}
+
+message GetConflictResponse {
+  Conflict conflict = 1;
+}
+
+message ListConflictsRequest {
+  string project_id = 1;
+  ConflictStatus status = 2;
+  ResourceType resource_type = 3;
+  common.PaginationRequest pagination = 4;
+}
+
+message ListConflictsResponse {
+  repeated Conflict conflicts = 1;
+  common.PaginationResponse pagination = 2;
+}
+
+message AutoResolveRequest {
+  string conflict_id = 1;
+  ResolutionStrategy strategy = 2;
+}
+
+message AutoResolveResponse {
+  bool success = 1;
+  Conflict conflict = 2;
+  bytes resolved_content = 3;
+  string message = 4;
+}
+
+message GetConflictHistoryRequest {
+  string project_id = 1;
+  string resource_id = 2;
+  common.PaginationRequest pagination = 3;
+}
+
+message GetConflictHistoryResponse {
+  repeated Conflict conflicts = 1;
+  common.PaginationResponse pagination = 2;
+}
+
+message SubscribeToConflictsRequest {
+  string project_id = 1;
+  string user_id = 2;
+}

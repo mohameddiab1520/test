@@ -10,13 +10,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/unity-collab/presence-service/internal/config"
-	"github.com/unity-collab/presence-service/internal/database"
-	"github.com/unity-collab/presence-service/internal/handler"
-	"github.com/unity-collab/presence-service/internal/middleware"
-	"github.com/unity-collab/presence-service/internal/repository"
-	"github.com/unity-collab/presence-service/internal/service"
-	"github.com/unity-collab/presence-service/internal/websocket"
+	"github.com/yourorg/collab/services/presence/internal/config"
+	"github.com/yourorg/collab/services/presence/internal/database"
+	"github.com/yourorg/collab/services/presence/internal/handler"
+	"github.com/yourorg/collab/services/presence/internal/middleware"
+	"github.com/yourorg/collab/services/presence/internal/repository"
+	"github.com/yourorg/collab/services/presence/internal/service"
+	"github.com/yourorg/collab/services/presence/internal/websocket"
 	"go.uber.org/zap"
 )
 

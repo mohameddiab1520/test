@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/unity-collab/presence-service/internal/models"
-	"github.com/unity-collab/presence-service/internal/repository"
+	"github.com/yourorg/collab/services/presence/internal/models"
+	"github.com/yourorg/collab/services/presence/internal/repository"
 	"go.uber.org/zap"
 )
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/unity-collab/presence-service/internal/config"
+	"github.com/yourorg/collab/services/presence/internal/config"
 )
 
 func NewRedis(cfg *config.Config) (*redis.Client, error) {

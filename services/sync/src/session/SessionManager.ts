@@ -12,6 +12,7 @@ import { Operation } from '../models/Operation';
 import { getRedisClient } from '../redis/RedisClient';
 import { getOTEngine } from '../ot/OperationalTransform';
 import { config } from '../config';
+import { validateToken, extractUserId } from '../auth/jwt';
 
 export class SessionManager {
   private connections: Map<string, ClientConnection> = new Map();
@@ -110,8 +111,17 @@ export class SessionManager {
       return;
     }
 
-    // TODO: Validate token and extract user info
-    // For now, we'll skip auth validation
+    // Validate token and extract user info
+    if (!token) {
+      this.sendError(clientId, 'Authentication token required');
+      return;
+    }
+
+    const userId = extractUserId(token);
+    if (!userId) {
+      this.sendError(clientId, 'Invalid or expired token');
+      return;
+    }
 
     const connection = this.connections.get(clientId);
     if (!connection) {
@@ -120,7 +130,7 @@ export class SessionManager {
 
     // Update connection with session info
     connection.sessionId = sessionId;
-    connection.userId = 'user-' + clientId.substring(0, 8); // Mock user ID
+    connection.userId = userId;
 
     // Get or create session state
     let session = this.sessions.get(sessionId);

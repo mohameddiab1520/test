@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/unity-collab/presence-service/internal/models"
+	"github.com/yourorg/collab/services/presence/internal/models"
 )
 
 type ActivityRepository struct {

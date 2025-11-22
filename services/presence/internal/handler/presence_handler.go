@@ -7,9 +7,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/unity-collab/presence-service/internal/models"
-	"github.com/unity-collab/presence-service/internal/service"
-	"github.com/unity-collab/presence-service/internal/websocket"
+	"github.com/yourorg/collab/services/presence/internal/models"
+	"github.com/yourorg/collab/services/presence/internal/service"
+	"github.com/yourorg/collab/services/presence/internal/websocket"
 	"go.uber.org/zap"
 )
 

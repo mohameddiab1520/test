@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/unity-collab/presence-service/internal/models"
+	"github.com/yourorg/collab/services/presence/internal/models"
 	"go.uber.org/zap"
 )
 
