@@ -12,6 +12,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+
+	"github.com/yourorg/collab/services/asset/internal/config"
+	"github.com/yourorg/collab/services/asset/internal/database"
+	"github.com/yourorg/collab/services/asset/internal/handler"
+	"github.com/yourorg/collab/services/asset/internal/repository"
+	"github.com/yourorg/collab/services/asset/internal/service"
+	"github.com/yourorg/collab/services/asset/internal/storage"
 )
 
 func main() {
@@ -22,6 +29,46 @@ func main() {
 	defer logger.Sync()
 
 	logger.Info("Starting Asset Service...")
+
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		logger.Fatal("Failed to load config", zap.Error(err))
+	}
+
+	// Connect to PostgreSQL
+	db, err := database.ConnectPostgres(
+		cfg.Database.Host,
+		cfg.Database.Port,
+		cfg.Database.User,
+		cfg.Database.Password,
+		cfg.Database.DBName,
+		cfg.Database.SSLMode,
+	)
+	if err != nil {
+		logger.Fatal("Failed to connect to database", zap.Error(err))
+	}
+	defer db.Close()
+	logger.Info("Connected to PostgreSQL")
+
+	// Initialize S3 storage
+	s3Storage, err := storage.NewS3Storage(
+		cfg.S3.Endpoint,
+		cfg.S3.AccessKeyID,
+		cfg.S3.SecretAccessKey,
+		cfg.S3.BucketName,
+		cfg.S3.Region,
+		cfg.S3.UseSSL,
+	)
+	if err != nil {
+		logger.Fatal("Failed to initialize S3 storage", zap.Error(err))
+	}
+	logger.Info("Connected to S3 storage")
+
+	// Initialize repository, service, and handler
+	assetRepo := repository.NewPostgresRepository(db)
+	assetService := service.NewAssetService(assetRepo, s3Storage, logger)
+	assetHandler := handler.NewAssetHandler(assetService, logger)
 
 	// Setup Gin router
 	router := gin.Default()
@@ -35,25 +82,21 @@ func main() {
 		})
 	})
 
-	// API v1 routes (placeholder)
+	// API v1 routes
 	v1 := router.Group("/api/v1")
 	{
-		v1.GET("/assets", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"assets": []interface{}{}})
-		})
-		v1.POST("/assets/upload", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"message": "Upload endpoint (to be implemented)"})
-		})
-		v1.GET("/assets/:id", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"message": "Get asset endpoint (to be implemented)"})
-		})
-		v1.GET("/assets/:id/download", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"message": "Download endpoint (to be implemented)"})
-		})
+		// Asset routes
+		v1.POST("/assets/upload-url", assetHandler.RequestUploadURL)
+		v1.POST("/assets/:id/confirm", assetHandler.ConfirmUpload)
+		v1.GET("/assets", assetHandler.ListAssets)
+		v1.GET("/assets/:id", assetHandler.GetAsset)
+		v1.GET("/assets/:id/download", assetHandler.GenerateDownloadURL)
+		v1.PUT("/assets/:id", assetHandler.UpdateAsset)
+		v1.DELETE("/assets/:id", assetHandler.DeleteAsset)
 	}
 
 	// Start server
-	port := os.Getenv("PORT")
+	port := cfg.Server.Port
 	if port == "" {
 		port = "8083"
 	}

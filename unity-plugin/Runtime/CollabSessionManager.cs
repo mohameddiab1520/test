@@ -264,7 +264,37 @@ namespace Collab.Unity
             {
                 // Parse transform data
                 var transformData = new TransformData();
-                // TODO: Parse position, rotation, scale from message.data
+
+                // Parse position
+                if (message.data.ContainsKey("position") && message.data["position"] is Dictionary<string, object> posDict)
+                {
+                    transformData.position = new Vector3(
+                        Convert.ToSingle(posDict.ContainsKey("x") ? posDict["x"] : 0f),
+                        Convert.ToSingle(posDict.ContainsKey("y") ? posDict["y"] : 0f),
+                        Convert.ToSingle(posDict.ContainsKey("z") ? posDict["z"] : 0f)
+                    );
+                }
+
+                // Parse rotation (quaternion)
+                if (message.data.ContainsKey("rotation") && message.data["rotation"] is Dictionary<string, object> rotDict)
+                {
+                    transformData.rotation = new Quaternion(
+                        Convert.ToSingle(rotDict.ContainsKey("x") ? rotDict["x"] : 0f),
+                        Convert.ToSingle(rotDict.ContainsKey("y") ? rotDict["y"] : 0f),
+                        Convert.ToSingle(rotDict.ContainsKey("z") ? rotDict["z"] : 0f),
+                        Convert.ToSingle(rotDict.ContainsKey("w") ? rotDict["w"] : 1f)
+                    );
+                }
+
+                // Parse scale
+                if (message.data.ContainsKey("scale") && message.data["scale"] is Dictionary<string, object> scaleDict)
+                {
+                    transformData.scale = new Vector3(
+                        Convert.ToSingle(scaleDict.ContainsKey("x") ? scaleDict["x"] : 1f),
+                        Convert.ToSingle(scaleDict.ContainsKey("y") ? scaleDict["y"] : 1f),
+                        Convert.ToSingle(scaleDict.ContainsKey("z") ? scaleDict["z"] : 1f)
+                    );
+                }
 
                 OnObjectTransformUpdate?.Invoke(message.data["objectId"].ToString(), transformData);
             }
