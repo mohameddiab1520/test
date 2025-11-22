@@ -23,9 +23,10 @@ func main() {
 
 	logger.Info("Starting Asset Service...")
 
-	gin.SetMode(gin.ReleaseMode)
+	// Setup Gin router
 	router := gin.Default()
 
+	// Health check
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "healthy",
@@ -34,32 +35,27 @@ func main() {
 		})
 	})
 
+	// API v1 routes (placeholder)
 	v1 := router.Group("/api/v1")
 	{
 		v1.GET("/assets", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"assets": []string{}})
+			c.JSON(http.StatusOK, gin.H{"assets": []interface{}{}})
 		})
-
-		v1.POST("/assets/upload-url", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{
-				"uploadUrl": "https://s3.example.com/upload",
-				"assetId":   "asset-123",
-			})
+		v1.POST("/assets/upload", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"message": "Upload endpoint (to be implemented)"})
 		})
-
 		v1.GET("/assets/:id", func(c *gin.Context) {
-			id := c.Param("id")
-			c.JSON(http.StatusOK, gin.H{
-				"id":       id,
-				"fileName": "sample.fbx",
-				"status":   "ready",
-			})
+			c.JSON(http.StatusOK, gin.H{"message": "Get asset endpoint (to be implemented)"})
+		})
+		v1.GET("/assets/:id/download", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"message": "Download endpoint (to be implemented)"})
 		})
 	}
 
+	// Start server
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8082"
+		port = "8083"
 	}
 
 	srv := &http.Server{
@@ -74,6 +70,7 @@ func main() {
 		}
 	}()
 
+	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
