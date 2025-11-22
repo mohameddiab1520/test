@@ -1,0 +1,107 @@
+{
+  "dashboard": {
+    "title": "Unity Collaboration Platform - Overview",
+    "tags": ["unity-collab", "overview"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Active Sessions",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(analytics_active_sessions)",
+            "legendFormat": "Active Sessions"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 0, "w": 8, "h": 8}
+      },
+      {
+        "id": 2,
+        "title": "Active Users",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "count(sum by (user_id) (presence_states))",
+            "legendFormat": "Active Users"
+          }
+        ],
+        "gridPos": {"x": 8, "y": 0, "w": 8, "h": 8}
+      },
+      {
+        "id": 3,
+        "title": "WebSocket Connections",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(websocket_connections_active)",
+            "legendFormat": "Active Connections"
+          }
+        ],
+        "gridPos": {"x": 16, "y": 0, "w": 8, "h": 8}
+      },
+      {
+        "id": 4,
+        "title": "API Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total[5m]))",
+            "legendFormat": "Requests/sec"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8}
+      },
+      {
+        "id": 5,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))",
+            "legendFormat": "Error Rate"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}
+      },
+      {
+        "id": 6,
+        "title": "API Latency (P95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, app))",
+            "legendFormat": "{{app}}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 16, "w": 24, "h": 8}
+      },
+      {
+        "id": 7,
+        "title": "Service CPU Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(container_cpu_usage_seconds_total[5m])) by (pod)",
+            "legendFormat": "{{pod}}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 24, "w": 12, "h": 8}
+      },
+      {
+        "id": 8,
+        "title": "Service Memory Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(container_memory_usage_bytes) by (pod)",
+            "legendFormat": "{{pod}}"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 24, "w": 12, "h": 8}
+      }
+    ],
+    "schemaVersion": 16,
+    "version": 1
+  }
+}

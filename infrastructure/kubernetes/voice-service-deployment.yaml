@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voice-service
+  namespace: unity-collab
+  labels:
+    app: voice-service
+    tier: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: voice-service
+  template:
+    metadata:
+      labels:
+        app: voice-service
+        tier: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8086"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: voice-service
+        image: unity-collab/voice-service:latest
+        ports:
+        - containerPort: 8086
+          name: http
+        - containerPort: 10000
+          protocol: UDP
+          name: rtc-start
+        - containerPort: 10100
+          protocol: UDP
+          name: rtc-end
+        env:
+        - name: SERVICE_NAME
+          value: "voice-service"
+        - name: SERVICE_PORT
+          value: "8086"
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: unity-collab-config
+              key: ENVIRONMENT
+        - name: MEDIASOUP_WORKERS
+          value: "4"
+        - name: RTC_MIN_PORT
+          value: "10000"
+        - name: RTC_MAX_PORT
+          value: "10100"
+        - name: MAX_PARTICIPANTS
+          value: "50"
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8086
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8086
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: voice-service
+  namespace: unity-collab
+  labels:
+    app: voice-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8086
+    targetPort: 8086
+    protocol: TCP
+    name: http
+  - port: 10000
+    targetPort: 10000
+    protocol: UDP
+    name: rtc
+  selector:
+    app: voice-service
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: voice-service-hpa
+  namespace: unity-collab
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: voice-service
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
