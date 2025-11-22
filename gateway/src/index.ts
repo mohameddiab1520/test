@@ -3,20 +3,42 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { config, validateConfig } from './config';
+import { authenticateToken, optionalAuth } from './middleware/auth';
+import { requestLogger, errorLogger } from './middleware/logger';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+
+// Validate configuration
+validateConfig();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Security middleware
 app.use(helmet());
-app.use(cors());
-app.use(express.json());
+
+// CORS configuration
+app.use(cors({
+  origin: config.cors.origin,
+  credentials: config.cors.credentials
+}));
+
+// Body parsing
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Request logging
+app.use(requestLogger);
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.max,
+  message: {
+    error: 'Too Many Requests',
+    message: 'Too many requests from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
 });
 
 app.use('/api/', limiter);
@@ -31,67 +53,181 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Service routes
-const SESSION_SERVICE = process.env.SESSION_SERVICE_URL || 'http://localhost:8080';
-const SYNC_SERVICE = process.env.SYNC_SERVICE_URL || 'http://localhost:8081';
-const ASSET_SERVICE = process.env.ASSET_SERVICE_URL || 'http://localhost:8082';
-const AUTH_SERVICE = process.env.AUTH_SERVICE_URL || 'http://localhost:8083';
+// Metrics endpoint
+app.get('/metrics', (req, res) => {
+  res.json({
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    timestamp: new Date().toISOString()
+  });
+});
 
-// Proxy to Auth Service
+// Auth Service Routes (public - no auth required)
 app.use('/api/v1/auth', createProxyMiddleware({
-  target: AUTH_SERVICE,
+  target: config.services.auth.url,
   changeOrigin: true,
+  timeout: config.services.auth.timeout,
   onProxyReq: (proxyReq, req, res) => {
     console.log(`[AUTH] ${req.method} ${req.path}`);
+  },
+  onError: (err, req, res) => {
+    console.error('[AUTH] Proxy error:', err);
+    res.status(503).json({
+      error: 'Service Unavailable',
+      message: 'Auth service is currently unavailable'
+    });
   }
 }));
 
-// Proxy to Session Service
-app.use('/api/v1/sessions', createProxyMiddleware({
-  target: SESSION_SERVICE,
+// Session Service Routes (requires authentication)
+app.use('/api/v1/sessions', authenticateToken, createProxyMiddleware({
+  target: config.services.session.url,
   changeOrigin: true,
-  onProxyReq: (proxyReq, req, res) => {
+  timeout: config.services.session.timeout,
+  onProxyReq: (proxyReq, req: any, res) => {
     console.log(`[SESSION] ${req.method} ${req.path}`);
+
+    // Forward user info in headers
+    if (req.user) {
+      proxyReq.setHeader('X-User-Id', req.user.id);
+      proxyReq.setHeader('X-User-Email', req.user.email);
+      proxyReq.setHeader('X-User-Role', req.user.role);
+    }
+  },
+  onError: (err, req, res) => {
+    console.error('[SESSION] Proxy error:', err);
+    res.status(503).json({
+      error: 'Service Unavailable',
+      message: 'Session service is currently unavailable'
+    });
   }
 }));
 
-// Proxy to Asset Service
-app.use('/api/v1/assets', createProxyMiddleware({
-  target: ASSET_SERVICE,
+// Asset Service Routes (requires authentication)
+app.use('/api/v1/assets', authenticateToken, createProxyMiddleware({
+  target: config.services.asset.url,
   changeOrigin: true,
-  onProxyReq: (proxyReq, req, res) => {
+  timeout: config.services.asset.timeout,
+  onProxyReq: (proxyReq, req: any, res) => {
     console.log(`[ASSET] ${req.method} ${req.path}`);
+
+    if (req.user) {
+      proxyReq.setHeader('X-User-Id', req.user.id);
+      proxyReq.setHeader('X-User-Email', req.user.email);
+      proxyReq.setHeader('X-User-Role', req.user.role);
+    }
+  },
+  onError: (err, req, res) => {
+    console.error('[ASSET] Proxy error:', err);
+    res.status(503).json({
+      error: 'Service Unavailable',
+      message: 'Asset service is currently unavailable'
+    });
   }
 }));
 
-// WebSocket proxy to Sync Service
-app.use('/ws', createProxyMiddleware({
-  target: SYNC_SERVICE,
+// Presence Service Routes (requires authentication)
+app.use('/api/v1/presence', authenticateToken, createProxyMiddleware({
+  target: config.services.presence.url,
+  changeOrigin: true,
+  timeout: config.services.presence.timeout,
+  ws: true, // Enable WebSocket support
+  onProxyReq: (proxyReq, req: any, res) => {
+    console.log(`[PRESENCE] ${req.method} ${req.path}`);
+
+    if (req.user) {
+      proxyReq.setHeader('X-User-Id', req.user.id);
+      proxyReq.setHeader('X-User-Email', req.user.email);
+      proxyReq.setHeader('X-User-Role', req.user.role);
+    }
+  },
+  onError: (err, req, res) => {
+    console.error('[PRESENCE] Proxy error:', err);
+    res.status(503).json({
+      error: 'Service Unavailable',
+      message: 'Presence service is currently unavailable'
+    });
+  }
+}));
+
+// Voice Service Routes (requires authentication)
+app.use('/api/v1/voice', authenticateToken, createProxyMiddleware({
+  target: config.services.voice.url,
+  changeOrigin: true,
+  timeout: config.services.voice.timeout,
+  ws: true, // Enable WebSocket support
+  onProxyReq: (proxyReq, req: any, res) => {
+    console.log(`[VOICE] ${req.method} ${req.path}`);
+
+    if (req.user) {
+      proxyReq.setHeader('X-User-Id', req.user.id);
+      proxyReq.setHeader('X-User-Email', req.user.email);
+      proxyReq.setHeader('X-User-Role', req.user.role);
+    }
+  },
+  onError: (err, req, res) => {
+    console.error('[VOICE] Proxy error:', err);
+    res.status(503).json({
+      error: 'Service Unavailable',
+      message: 'Voice service is currently unavailable'
+    });
+  }
+}));
+
+// Analytics Service Routes (requires authentication)
+app.use('/api/v1/analytics', authenticateToken, createProxyMiddleware({
+  target: config.services.analytics.url,
+  changeOrigin: true,
+  timeout: config.services.analytics.timeout,
+  onProxyReq: (proxyReq, req: any, res) => {
+    console.log(`[ANALYTICS] ${req.method} ${req.path}`);
+
+    if (req.user) {
+      proxyReq.setHeader('X-User-Id', req.user.id);
+      proxyReq.setHeader('X-User-Email', req.user.email);
+      proxyReq.setHeader('X-User-Role', req.user.role);
+    }
+  },
+  onError: (err, req, res) => {
+    console.error('[ANALYTICS] Proxy error:', err);
+    res.status(503).json({
+      error: 'Service Unavailable',
+      message: 'Analytics service is currently unavailable'
+    });
+  }
+}));
+
+// WebSocket proxy to Sync Service (requires authentication)
+app.use('/ws', authenticateToken, createProxyMiddleware({
+  target: config.services.sync.url,
   ws: true,
   changeOrigin: true,
-  onProxyReq: (proxyReq, req, res) => {
+  onProxyReq: (proxyReq, req: any, res) => {
     console.log(`[SYNC] WebSocket connection`);
+
+    if (req.user) {
+      proxyReq.setHeader('X-User-Id', req.user.id);
+      proxyReq.setHeader('X-User-Email', req.user.email);
+      proxyReq.setHeader('X-User-Role', req.user.role);
+    }
+  },
+  onError: (err, req, res) => {
+    console.error('[SYNC] Proxy error:', err);
   }
 }));
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    message: `Route ${req.method} ${req.path} not found`
-  });
-});
+// Error logging
+app.use(errorLogger);
 
-// Error handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: err.message
-  });
-});
+// 404 handler
+app.use(notFoundHandler);
+
+// Global error handler
+app.use(errorHandler);
 
 // Start server
+const PORT = config.port;
+
 app.listen(PORT, () => {
   console.log(`API Gateway listening on port ${PORT}`);
   console.log(`Routes:`);
@@ -99,5 +235,17 @@ app.listen(PORT, () => {
   console.log(`  Auth: http://localhost:${PORT}/api/v1/auth/*`);
   console.log(`  Sessions: http://localhost:${PORT}/api/v1/sessions/*`);
   console.log(`  Assets: http://localhost:${PORT}/api/v1/assets/*`);
+  console.log(`  Presence: http://localhost:${PORT}/api/v1/presence/*`);
+  console.log(`  Voice: http://localhost:${PORT}/api/v1/voice/*`);
+  console.log(`  Analytics: http://localhost:${PORT}/api/v1/analytics/*`);
   console.log(`  WebSocket: ws://localhost:${PORT}/ws`);
 });
+
+// Graceful shutdown
+const shutdown = (signal: string) => {
+  console.log(`${signal} received. Closing server...`);
+  process.exit(0);
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
