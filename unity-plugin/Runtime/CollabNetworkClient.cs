@@ -76,14 +76,17 @@ namespace Collab.Unity
         }
 
         /// <summary>
-        /// Connect to WebSocket server
+        /// Connect to WebSocket server for a specific session
         /// </summary>
-        public async Task ConnectWebSocket()
+        public async Task ConnectWebSocket(string sessionId)
         {
             try
             {
-                string wsUrl = $"{config.wsUrl}?token={accessToken}";
-                webSocket = new WebSocket(wsUrl);
+                // Build WebSocket URL: ws://host/api/v1/sessions/{sessionId}/ws
+                string wsUrl = config.wsUrl.Replace("http://", "ws://").Replace("https://", "wss://");
+                wsUrl = $"{wsUrl}/api/v1/sessions/{sessionId}/ws";
+
+                webSocket = new WebSocket(wsUrl, accessToken);
 
                 webSocket.OnOpen += HandleWebSocketOpen;
                 webSocket.OnClose += HandleWebSocketClose;
@@ -91,11 +94,93 @@ namespace Collab.Unity
                 webSocket.OnError += HandleWebSocketError;
 
                 await webSocket.Connect();
+                Log($"WebSocket connecting to: {wsUrl}");
             }
             catch (Exception ex)
             {
                 OnError?.Invoke($"WebSocket connection failed: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Send presence update
+        /// </summary>
+        public void SendPresenceUpdate(string status, string currentScene = null, string selectedObject = null)
+        {
+            var message = new WebSocketMessage
+            {
+                type = "presence_update",
+                data = new System.Collections.Generic.Dictionary<string, object>
+                {
+                    { "status", status },
+                    { "currentScene", currentScene },
+                    { "selectedObject", selectedObject }
+                },
+                timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+            };
+
+            string json = JsonUtility.ToJson(message);
+            SendMessage(json);
+        }
+
+        /// <summary>
+        /// Send scene update
+        /// </summary>
+        public void SendSceneUpdate(object sceneData)
+        {
+            var message = new WebSocketMessage
+            {
+                type = "scene_update",
+                data = new System.Collections.Generic.Dictionary<string, object>
+                {
+                    { "sceneData", sceneData }
+                },
+                timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+            };
+
+            string json = JsonUtility.ToJson(message);
+            SendMessage(json);
+        }
+
+        /// <summary>
+        /// Send object transform update
+        /// </summary>
+        public void SendObjectTransform(string objectId, Vector3 position, Quaternion rotation, Vector3 scale)
+        {
+            var message = new WebSocketMessage
+            {
+                type = "object_transform",
+                data = new System.Collections.Generic.Dictionary<string, object>
+                {
+                    { "objectId", objectId },
+                    { "position", new { x = position.x, y = position.y, z = position.z } },
+                    { "rotation", new { x = rotation.x, y = rotation.y, z = rotation.z, w = rotation.w } },
+                    { "scale", new { x = scale.x, y = scale.y, z = scale.z } }
+                },
+                timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+            };
+
+            string json = JsonUtility.ToJson(message);
+            SendMessage(json);
+        }
+
+        /// <summary>
+        /// Send chat message
+        /// </summary>
+        public void SendChatMessage(string message)
+        {
+            var wsMessage = new WebSocketMessage
+            {
+                type = "chat_message",
+                data = new System.Collections.Generic.Dictionary<string, object>
+                {
+                    { "message", message }
+                },
+                timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+            };
+
+            string json = JsonUtility.ToJson(wsMessage);
+            SendMessage(json);
         }
 
         /// <summary>
@@ -306,6 +391,16 @@ namespace Collab.Unity
         public string status;
     }
 
+    [Serializable]
+    public class WebSocketMessage
+    {
+        public string type;
+        public string sessionId;
+        public string userId;
+        public System.Collections.Generic.Dictionary<string, object> data;
+        public long timestamp;
+    }
+
     /// <summary>
     /// Simple WebSocket implementation for Unity
     /// Note: In production, use a library like WebSocketSharp or NativeWebSocket
@@ -313,6 +408,7 @@ namespace Collab.Unity
     public class WebSocket
     {
         private string url;
+        private string token;
         public bool IsConnected { get; private set; }
 
         public event Action OnOpen;
@@ -320,9 +416,10 @@ namespace Collab.Unity
         public event Action<string> OnMessage;
         public event Action<string> OnError;
 
-        public WebSocket(string url)
+        public WebSocket(string url, string authToken = null)
         {
             this.url = url;
+            this.token = authToken;
         }
 
         public async Task Connect()

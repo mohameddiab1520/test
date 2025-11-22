@@ -223,3 +223,130 @@ docker-build-sync: ## Build Sync Service Docker image
 	docker build -t collab/sync:dev -f services/sync/Dockerfile services/sync
 
 docker-build-all: docker-build-session docker-build-asset docker-build-auth docker-build-sync ## Build all Docker images
+
+# === Build Commands ===
+build-auth: ## Build Auth Service
+	@echo "🔨 Building Auth Service..."
+	cd services/auth && go build -o ../../bin/auth-service ./cmd/server
+
+build-session: ## Build Session Service
+	@echo "🔨 Building Session Service..."
+	cd services/session && go build -o ../../bin/session-service ./cmd/server
+
+build-asset: ## Build Asset Service
+	@echo "🔨 Building Asset Service..."
+	cd services/asset && go build -o ../../bin/asset-service ./cmd/server
+
+build-all: build-auth build-session build-asset ## Build all services
+	@echo "✅ All services built successfully!"
+
+# === Test Commands ===
+test-auth: ## Run Auth Service tests
+	@echo "🧪 Testing Auth Service..."
+	cd services/auth && go test -v -race ./...
+
+test-session: ## Run Session Service tests
+	@echo "🧪 Testing Session Service..."
+	cd services/session && go test -v -race ./...
+
+test-asset: ## Run Asset Service tests
+	@echo "🧪 Testing Asset Service..."
+	cd services/asset && go test -v ./...
+
+test-all: test-auth test-session test-asset ## Run all tests
+	@echo "✅ All tests completed!"
+
+test-coverage: ## Run tests with coverage
+	@echo "📊 Running tests with coverage..."
+	cd services/auth && go test -coverprofile=coverage.out ./...
+	cd services/session && go test -coverprofile=coverage.out ./...
+
+# === Run Commands ===
+run-auth: ## Run Auth Service locally
+	@echo "🚀 Starting Auth Service..."
+	cd services/auth && go run ./cmd/server
+
+run-session: ## Run Session Service locally
+	@echo "🚀 Starting Session Service..."
+	cd services/session && go run ./cmd/server
+
+run-asset: ## Run Asset Service locally
+	@echo "🚀 Starting Asset Service..."
+	cd services/asset && go run ./cmd/server
+
+# === Docker Commands (Enhanced) ===
+docker-build-auth: ## Build Auth Service Docker image
+	@echo "🐳 Building Auth Service Docker image..."
+	docker build -t collab-auth:latest ./services/auth
+
+docker-build-session: ## Build Session Service Docker image
+	@echo "🐳 Building Session Service Docker image..."
+	docker build -t collab-session:latest ./services/session
+
+docker-build-asset: ## Build Asset Service Docker image
+	@echo "🐳 Building Asset Service Docker image..."
+	docker build -t collab-asset:latest ./services/asset
+
+docker-build-all: docker-build-auth docker-build-session docker-build-asset ## Build all Docker images
+	@echo "✅ All Docker images built!"
+
+# === Utility Commands ===
+lint: ## Run linter on all services
+	@echo "🔍 Running linter..."
+	cd services/auth && golangci-lint run
+	cd services/session && golangci-lint run
+	cd services/asset && golangci-lint run
+
+fmt: ## Format code
+	@echo "✨ Formatting code..."
+	cd services/auth && go fmt ./...
+	cd services/session && go fmt ./...
+	cd services/asset && go fmt ./...
+
+migrate: ## Run database migrations
+	@echo "📦 Running database migrations..."
+	cd migrations && migrate -database "postgresql://postgres:postgres@localhost:5432/collab_db?sslmode=disable" -path . up
+
+db-reset: ## Reset database (WARNING: destroys data)
+	@echo "⚠️  Resetting database..."
+	docker-compose -f docker-compose.dev.yml down -v
+	docker-compose -f docker-compose.dev.yml up -d postgres redis
+	sleep 3
+	$(MAKE) migrate
+
+# === Quick Start ===
+dev: ## Start full development environment
+	@echo "🚀 Starting development environment..."
+	docker-compose -f docker-compose.dev.yml up -d
+	@echo "✅ Development environment ready!"
+	@echo "   - PostgreSQL: localhost:5432"
+	@echo "   - Redis: localhost:6379"
+	@echo "   - MinIO: localhost:9000"
+
+dev-down: ## Stop development environment
+	@echo "🛑 Stopping development environment..."
+	docker-compose -f docker-compose.dev.yml down
+
+dev-logs: ## Show development environment logs
+	docker-compose -f docker-compose.dev.yml logs -f
+
+# === Dependencies ===
+deps: ## Download Go dependencies for all services
+	@echo "📥 Downloading dependencies..."
+	cd services/auth && go mod download
+	cd services/session && go mod download
+	cd services/asset && go mod download
+	@echo "✅ Dependencies downloaded!"
+
+deps-update: ## Update Go dependencies
+	@echo "⬆️  Updating dependencies..."
+	cd services/auth && go get -u ./...
+	cd services/session && go get -u ./...
+	cd services/asset && go get -u ./...
+
+# === Cleanup ===
+clean: ## Clean build artifacts
+	@echo "🧹 Cleaning build artifacts..."
+	rm -rf bin/
+	rm -f services/*/coverage.out
+	@echo "✅ Cleanup complete!"

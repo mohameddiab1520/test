@@ -70,8 +70,13 @@ func main() {
 		logger,
 	)
 
+	// Initialize WebSocket hub
+	wsHub := handler.NewWebSocketHub(logger, sessionService)
+	go wsHub.Run()
+
 	// Initialize handlers
 	sessionHandler := handler.NewSessionHandler(sessionService, logger)
+	wsHandler := handler.NewWebSocketHandler(wsHub, sessionService, logger)
 
 	// Setup Gin router
 	if cfg.Server.Mode == "release" {
@@ -144,6 +149,9 @@ func main() {
 
 			// Presence
 			protected.PATCH("/sessions/:id/presence", sessionHandler.UpdatePresence)
+
+			// WebSocket
+			protected.GET("/sessions/:id/ws", wsHandler.HandleWebSocket)
 		}
 	}
 

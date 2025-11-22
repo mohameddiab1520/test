@@ -10,3 +10,5 @@ require (
 	github.com/redis/go-redis/v9 v9.4.0
 	go.uber.org/zap v1.26.0
 )
+
+require github.com/gorilla/websocket v1.5.1
