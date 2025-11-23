@@ -197,6 +197,52 @@ app.use('/api/v1/analytics', authenticateToken, createProxyMiddleware({
   }
 }));
 
+// Build Service Routes (requires authentication)
+app.use('/api/v1/builds', authenticateToken, createProxyMiddleware({
+  target: config.services.build.url,
+  changeOrigin: true,
+  timeout: config.services.build.timeout,
+  onProxyReq: (proxyReq, req: any, res) => {
+    console.log(`[BUILD] ${req.method} ${req.path}`);
+
+    if (req.user) {
+      proxyReq.setHeader('X-User-Id', req.user.id);
+      proxyReq.setHeader('X-User-Email', req.user.email);
+      proxyReq.setHeader('X-User-Role', req.user.role);
+    }
+  },
+  onError: (err, req, res) => {
+    console.error('[BUILD] Proxy error:', err);
+    res.status(503).json({
+      error: 'Service Unavailable',
+      message: 'Build service is currently unavailable'
+    });
+  }
+}));
+
+// Conflict Service Routes (requires authentication)
+app.use('/api/v1/conflicts', authenticateToken, createProxyMiddleware({
+  target: config.services.conflict.url,
+  changeOrigin: true,
+  timeout: config.services.conflict.timeout,
+  onProxyReq: (proxyReq, req: any, res) => {
+    console.log(`[CONFLICT] ${req.method} ${req.path}`);
+
+    if (req.user) {
+      proxyReq.setHeader('X-User-Id', req.user.id);
+      proxyReq.setHeader('X-User-Email', req.user.email);
+      proxyReq.setHeader('X-User-Role', req.user.role);
+    }
+  },
+  onError: (err, req, res) => {
+    console.error('[CONFLICT] Proxy error:', err);
+    res.status(503).json({
+      error: 'Service Unavailable',
+      message: 'Conflict service is currently unavailable'
+    });
+  }
+}));
+
 // WebSocket proxy to Sync Service (requires authentication)
 app.use('/ws', authenticateToken, createProxyMiddleware({
   target: config.services.sync.url,
@@ -238,6 +284,8 @@ app.listen(PORT, () => {
   console.log(`  Presence: http://localhost:${PORT}/api/v1/presence/*`);
   console.log(`  Voice: http://localhost:${PORT}/api/v1/voice/*`);
   console.log(`  Analytics: http://localhost:${PORT}/api/v1/analytics/*`);
+  console.log(`  Builds: http://localhost:${PORT}/api/v1/builds/*`);
+  console.log(`  Conflicts: http://localhost:${PORT}/api/v1/conflicts/*`);
   console.log(`  WebSocket: ws://localhost:${PORT}/ws`);
 });
 

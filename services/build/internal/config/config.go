@@ -19,10 +19,16 @@ type Config struct {
 	RedisPort           int
 	RedisPassword       string
 	RedisDB             int
+	S3Endpoint          string
+	S3AccessKey         string
+	S3SecretKey         string
+	S3Bucket            string
+	S3Region            string
+	S3UseSSL            bool
 	UnityPath           string
+	WorkspaceDir        string
 	DefaultUnityVersion string
 	BuildArtifactsPath  string
-	S3Bucket            string
 	AWSRegion           string
 	MaxConcurrentBuilds int
 	BuildTimeout        int
@@ -43,10 +49,16 @@ func Load() *Config {
 		RedisPort:           getEnvAsInt("REDIS_PORT", 6379),
 		RedisPassword:       getEnv("REDIS_PASSWORD", ""),
 		RedisDB:             getEnvAsInt("REDIS_DB", 0),
+		S3Endpoint:          getEnv("S3_ENDPOINT", "localhost:9000"),
+		S3AccessKey:         getEnv("S3_ACCESS_KEY", "minioadmin"),
+		S3SecretKey:         getEnv("S3_SECRET_KEY", "minioadmin"),
+		S3Bucket:            getEnv("S3_BUCKET", "unity-collab-builds"),
+		S3Region:            getEnv("S3_REGION", "us-east-1"),
+		S3UseSSL:            getEnvAsBool("S3_USE_SSL", false),
 		UnityPath:           getEnv("UNITY_PATH", "/Applications/Unity/Hub/Editor"),
+		WorkspaceDir:        getEnv("WORKSPACE_DIR", "./workspace"),
 		DefaultUnityVersion: getEnv("DEFAULT_UNITY_VERSION", "2022.3.0f1"),
 		BuildArtifactsPath:  getEnv("BUILD_ARTIFACTS_PATH", "./build-artifacts"),
-		S3Bucket:            getEnv("S3_BUCKET", "unity-collab-builds"),
 		AWSRegion:           getEnv("AWS_REGION", "us-east-1"),
 		MaxConcurrentBuilds: getEnvAsInt("MAX_CONCURRENT_BUILDS", 3),
 		BuildTimeout:        getEnvAsInt("BUILD_TIMEOUT", 3600),
@@ -64,6 +76,15 @@ func getEnvAsInt(key string, defaultValue int) int {
 	if value := os.Getenv(key); value != "" {
 		if intValue, err := strconv.Atoi(value); err == nil {
 			return intValue
+		}
+	}
+	return defaultValue
+}
+
+func getEnvAsBool(key string, defaultValue bool) bool {
+	if value := os.Getenv(key); value != "" {
+		if boolValue, err := strconv.ParseBool(value); err == nil {
+			return boolValue
 		}
 	}
 	return defaultValue

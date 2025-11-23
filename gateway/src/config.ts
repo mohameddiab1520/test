@@ -17,6 +17,8 @@ export interface GatewayConfig {
     presence: ServiceConfig;
     voice: ServiceConfig;
     analytics: ServiceConfig;
+    build: ServiceConfig;
+    conflict: ServiceConfig;
   };
   rateLimit: {
     windowMs: number;
@@ -62,6 +64,14 @@ export const config: GatewayConfig = {
     analytics: {
       url: process.env.ANALYTICS_SERVICE_URL || 'http://localhost:8086',
       timeout: 30000
+    },
+    build: {
+      url: process.env.BUILD_SERVICE_URL || 'http://localhost:8087',
+      timeout: 120000 // Longer timeout for build operations
+    },
+    conflict: {
+      url: process.env.CONFLICT_SERVICE_URL || 'http://localhost:8088',
+      timeout: 30000
     }
   },
 
@@ -94,4 +104,6 @@ export function validateConfig(): void {
   console.log(`  Presence Service: ${config.services.presence.url}`);
   console.log(`  Voice Service: ${config.services.voice.url}`);
   console.log(`  Analytics Service: ${config.services.analytics.url}`);
+  console.log(`  Build Service: ${config.services.build.url}`);
+  console.log(`  Conflict Service: ${config.services.conflict.url}`);
 }
